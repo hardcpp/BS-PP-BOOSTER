@@ -1,5 +1,7 @@
 BS-PP-BOOSTER = First public test
 
+**DOWNLOAD** https://discord.gg/K4X94Ea
+
 **Require Steam version of beat saber for now**
 
 This plugin will allow you to generate ranked playlist according to your level or choosen settings, it's fully integrated in the game and will automaticly download songs & generate playlist.
