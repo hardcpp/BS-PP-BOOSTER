@@ -16,6 +16,6 @@ Discord & Download/Update
 https://discord.gg/K4X94Ea
 
 ![](https://puu.sh/GwF0R/0b8cb4cced.png)
+![](https://puu.sh/GwFp5/c2e83d08dc.jpg)
 ![](https://puu.sh/GwFpv/0f7cabc61e.jpg)
 ![](https://puu.sh/GwFq0/070eedf129.jpg)
-![](https://puu.sh/GwFp5/c2e83d08dc.jpg)
