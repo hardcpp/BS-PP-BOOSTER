@@ -3,7 +3,7 @@ BS-PP-BOOSTER
 
 **Download** https://github.com/hardcpp/BS-PP-BOOSTER/releases
 
-**Discord** https://discord.gg/K4X94Ea (Support, Testing, Early releases)
+**Discord** https://discord.gg/K4X94Ea (Download, Support, Testing, Early releases and cool new mods comming soon)
 
 This plugin will allow you to generate ranked playlist according to your level or choosen settings, it's fully integrated in the game and will automaticly download songs & generate playlist.
 
