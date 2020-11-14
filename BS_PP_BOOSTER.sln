@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.181
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BS_PP_BOOSTER", "BS_PP_BOOSTER\BS_PP_BOOSTER.csproj", "{F6753C85-32B0-4579-897D-604E116C3648}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F6753C85-32B0-4579-897D-604E116C3648}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6753C85-32B0-4579-897D-604E116C3648}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6753C85-32B0-4579-897D-604E116C3648}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6753C85-32B0-4579-897D-604E116C3648}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {803ACB09-B154-4767-A288-0B1A5352E931}
+	EndGlobalSection
+EndGlobal
