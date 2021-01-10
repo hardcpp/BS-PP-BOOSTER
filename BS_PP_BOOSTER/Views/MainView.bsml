@@ -1,11 +1,11 @@
 ﻿<vertical child-control-height='false'>
   <horizontal bg='panel-top' pad-left='15' pad-right='15' horizontal-fit='PreferredSize'>
-    <text text='BS PP BOOSTER v1.0.1' align='Center' font-size='4.2'></text>
+    <text text='BS PP BOOSTER v1.0.3' align='Center' font-size='4.2'></text>
   </horizontal>
 
   <horizontal min-width='110'>
     <vertical spacing='0' size-delta-x='75' min-width='75'>
-      <vertical size-delta-x='70' min-width='70' pad-top='2'>
+      <vertical size-delta-x='70' min-width='70' pad-top='1'>
         <text text='Playlist type' hover-hint='~playlist-type-hint'></text>
         <list-setting id='playlist-type-slider' value='type-choice' choices='type-options' hover-hint='~playlist-type-hint' apply-on-change='true' />
       </vertical>
@@ -13,7 +13,7 @@
         <text text='Accuracy type' hover-hint='~accuracy-type-hint'></text>
         <list-setting id='accuracy-type-slider' value='accuracy-choice' choices='accuracy-options' hover-hint='~accuracy-type-hint' apply-on-change='true' />
       </vertical>
-      <vertical size-delta-x='70' min-width='70' pad-bottom='2'>
+      <vertical size-delta-x='70' min-width='70' pad-bottom='1'>
         <text text='Enable text' hover-hint='~enabled-hint'></text>
         <bool-setting id='enable-slider' value='enabled' hover-hint='~enabled-hint' apply-on-change='true'></bool-setting>
       </vertical>

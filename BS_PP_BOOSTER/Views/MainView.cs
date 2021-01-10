@@ -136,11 +136,11 @@ namespace BS_PP_BOOSTER.Views
                 }
             };
 
-            m_TypeOptions = Helper.PlaylistTypes;
-            m_TypeChoice  = Helper.DefaultPlaylistType;
+            m_TypeOptions           = Helper.PlaylistTypes;
+            m_TypeChoice            = Helper.DefaultPlaylistType;
 
-            m_AccuracyOptions = Helper.AccuracyTypes;
-            m_AccuracyChoice  = Helper.DefaultAccuracyType;
+            m_AccuracyOptions       = Helper.AccuracyTypes;
+            m_AccuracyChoice        = Helper.DefaultAccuracyType;
 
             var l_Config    = Plugin.instance.PluginConfig;
             var l_Section   = "Config_" + Helper.GetProfileID();
@@ -160,7 +160,7 @@ namespace BS_PP_BOOSTER.Views
 
             m_HttpClient = new Http(new HttpOptions()
             {
-                ApplicationName = "Test Client",
+                ApplicationName = "bs_pp_booster",
                 Version = new System.Version(1, 0, 0),
             });
         }
@@ -439,16 +439,9 @@ namespace BS_PP_BOOSTER.Views
         /// </summary>
         private void QuerySongMeta()
         {
-            m_SongDownloader = new WebClient();
-            m_SongDownloader.Proxy                      = null;                    ///< Avoid searching for a proxy on the network for 10sec
-            m_SongDownloader.UseDefaultCredentials      = true;
-            m_SongDownloader.DownloadStringCompleted   += SongDownloaded_Meta;
-            m_SongDownloader.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36");
-            m_SongDownloader.Headers.Add("Accept", "text/html, application/xhtml+xml, */*");
-
             string l_URL = "http://beatsaver.com/api/maps/by-hash/" + m_SongsToDownload[m_SongDownloadIndex].ToLower();
 
-            m_SongDownloader.DownloadStringAsync(new System.Uri(l_URL));
+            m_HttpClient.GetAsync(l_URL, CancellationToken.None, null).ContinueWith((x) => SongDownloaded_Meta(x.Result));
             BS_PP_BOOSTERController.Instance.SetText("Downloading song " + (m_SongDownloadIndex + 1) + "/" + m_SongsToDownload.Count);
         }
         /// <summary>
@@ -456,15 +449,13 @@ namespace BS_PP_BOOSTER.Views
         /// </summary>
         /// <param name="p_Sender">Sender</param>
         /// <param name="p_Event">Event</param>
-        private void SongDownloaded_Meta(object p_Sender, DownloadStringCompletedEventArgs p_Event)
+        private void SongDownloaded_Meta(HttpResponse p_Response)
         {
             try
             {
-                if (p_Event.Error != null)
-                    Logger.log.Error(p_Event.Error.Message);
-
-                if (p_Event.Error != null || p_Event.Cancelled || p_Event.Result == "Not Found")
+                if (p_Response == null || !p_Response.IsSuccessStatusCode || p_Response.StatusCode != HttpStatusCode.OK)
                 {
+                    Logger.log.Error(p_Response.ReasonPhrase);
                     m_SongDownloadIndex++;
 
                     if (m_SongDownloadIndex < m_SongsToDownload.Count)
@@ -475,7 +466,7 @@ namespace BS_PP_BOOSTER.Views
                     return;
                 }
 
-                m_CurrentDownloadMeta = JObject.Parse(p_Event.Result);
+                m_CurrentDownloadMeta = JObject.Parse(p_Response.String());
 
                 string[] l_PathArray = new string[6]
                 {
@@ -503,6 +494,10 @@ namespace BS_PP_BOOSTER.Views
 
                 string l_DownloadURL = "http://beatsaver.com" + (string)m_CurrentDownloadMeta["directDownload"];
 
+                /// Support direct URL
+                if (((string)m_CurrentDownloadMeta["directDownload"]).ToLower().StartsWith("http"))
+                    l_DownloadURL = (string)m_CurrentDownloadMeta["directDownload"];
+
                 var l_Query = m_HttpClient.GetAsync(l_DownloadURL, CancellationToken.None, null);
                 l_Query.GetAwaiter().OnCompleted(() =>
                 {
@@ -513,6 +508,8 @@ namespace BS_PP_BOOSTER.Views
                             System.IO.File.WriteAllBytes(l_ZIPFileName, l_Query.Result.Bytes());
                             Plugin.instance.ExtractQueue.Enqueue((l_ZIPFileName, l_ExtractPath));
                         }
+                        else
+                            Logger.log.Error("HTTP Result " + l_Query.Result.StatusCode);
 
                         m_SongDownloadIndex++;
 
