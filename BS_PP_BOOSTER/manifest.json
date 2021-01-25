@@ -3,15 +3,15 @@
   "id": "BS_PP_BOOSTER",
   "name": "BS_PP_BOOSTER",
   "author": "HardCPP",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "gameVersion": "1.12.2",
-  "dependsOn": {
-    "BSIPA": "^4.1.3",
-    "SongCore": "^3.0.0",
-    "BeatSaberMarkupLanguage": "^1.3.4",
-    "PlaylistLoaderLite": "^1.1.0",
-    "BS Utils": "^1.6.0"
-  },
-  "features": []
+    "dependsOn": {
+        "BSIPA": "^4.1.3",
+        "SongCore": "^3.0.0",
+        "BeatSaberMarkupLanguage": "^1.3.4",
+        "PlaylistManager": "^0.1.1",
+        "BeatSaberPlaylistsLib": "^1.1.0",
+        "BS Utils": "^1.6.0"
+    }
 }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using PlaylistManager.Utilities;
 
 namespace BS_PP_BOOSTER
 {
@@ -101,11 +102,7 @@ namespace BS_PP_BOOSTER
         /// </summary>
         internal static void RefreshPlaylist()
         {
-            ///BS_PP_BOOSTERController.Instance.RefreshSongs();
-            var l_Instance  = Resources.FindObjectsOfTypeAll<PlaylistLoaderLite.UI.PluginUI>().FirstOrDefault();
-            var l_Type      = typeof(PlaylistLoaderLite.UI.PluginUI);
-            var l_Method    = l_Type.GetMethod("RefreshButtonPressed", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            l_Method.Invoke(l_Instance, null);
+            BS_PP_BOOSTERController.Instance.RefreshSongs();
         }
 
         ////////////////////////////////////////////////////////////////////////////

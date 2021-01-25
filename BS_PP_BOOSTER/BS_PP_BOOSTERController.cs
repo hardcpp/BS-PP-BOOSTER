@@ -1,10 +1,8 @@
 ﻿using System.Collections;
-using System.Collections.Generic;
 using SongCore;
 using TMPro;
 using UnityEngine;
-using BS_Utils.Utilities;
-using IPA.Utilities;
+using PlaylistManager.Utilities;
 
 namespace BS_PP_BOOSTER
 {
@@ -19,6 +17,7 @@ namespace BS_PP_BOOSTER
         private static readonly Vector2 CanvasSize      = new Vector2(400, 50);
         private static readonly Vector2 HeaderPosition  = new Vector2(10, 15);
         private static readonly float   HeaderFontSize  = 15f;
+        private static readonly string AssemblyName = typeof(BS_PP_BOOSTERController).Assembly.GetName().Name;
 
         ////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////
@@ -195,15 +194,7 @@ namespace BS_PP_BOOSTER
 
             yield return new WaitUntil(() => Loader.AreSongsLoaded == true);
 
-            var l_Type = typeof(PlaylistLoaderLite.LoadPlaylistScript);
-            try
-            {
-                l_Type.InvokeMethod("load", new object[] { });
-            }
-            catch (System.Exception)
-            {
-                l_Type.InvokeMethod("Load", new object[] { });
-            }
+            PlaylistLibUtils.playlistManager.RequestRefresh(AssemblyName);
 
             SetText("Songs reloaded !");
         }
