@@ -161,7 +161,8 @@ namespace BS_PP_BOOSTER.Views
             m_HttpClient = new Http(new HttpOptions()
             {
                 ApplicationName = "bs_pp_booster",
-                Version = new System.Version(1, 0, 0),
+                Version = new System.Version(1, 1, 0),
+                HandleRateLimits = true
             });
         }
         /// <summary>
@@ -394,32 +395,69 @@ namespace BS_PP_BOOSTER.Views
                 return;
             }
 
-            string l_PlaylistPath = Helper.GetPlaylistFilePath();
-
-            if (System.IO.File.Exists(l_PlaylistPath))
-                System.IO.File.Delete(l_PlaylistPath);
+            var l_IPlaylist = BeatSaberPlaylistsLib.PlaylistManager.DefaultManager.DefaultHandler.Deserialize(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(p_Event.Result)));
+            l_IPlaylist.Filename = Helper.GetPlaylistFileName();
 
             m_SongsToDownload.Clear();
 
-            var l_JSON = JObject.Parse(p_Event.Result);
-            if (l_JSON["songs"] != null)
+            ///var l_JSON = JObject.Parse(p_Event.Result);
+            ///if (l_JSON["songs"] != null)
+            ///{
+            ///    JArray l_JSONSongs = (JArray)l_JSON["songs"];
+            ///    for (int l_SongIt = 0; l_SongIt < l_JSONSongs.Count && l_SongIt < m_PlaylistSize; l_SongIt++)
+            ///    {
+            ///        string l_Hash = (string)l_JSONSongs[l_SongIt]["hash"];
+            ///        var l_Song = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => string.Equals(y.levelID.Split('_')[2], l_Hash, StringComparison.OrdinalIgnoreCase));
+            ///
+            ///        if (l_Song == null && !m_SongsToDownload.Contains(l_Hash))
+            ///            m_SongsToDownload.Add(l_Hash);
+            ///    }
+            ///
+            ///    while (l_JSONSongs.Count > m_PlaylistSize)
+            ///        l_JSONSongs.RemoveAt(l_JSONSongs.Count - 1);
+            ///}
+
+
+            int l_AddedSongs = 0;
+            if (l_IPlaylist is BeatSaberPlaylistsLib.Legacy.LegacyPlaylist l_LegacyPlaylist)
             {
-                JArray l_JSONSongs = (JArray)l_JSON["songs"];
-                for (int l_SongIt = 0; l_SongIt < l_JSONSongs.Count && l_SongIt < m_PlaylistSize; l_SongIt++)
+                foreach (var l_CurrentMap in l_LegacyPlaylist)
                 {
-                    string l_Hash = (string)l_JSONSongs[l_SongIt]["hash"];
-                    var l_Song = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => string.Equals(y.levelID.Split('_')[2], l_Hash, StringComparison.OrdinalIgnoreCase));
+                    if (l_CurrentMap.Hash != null)
+                    {
+                        var l_Song = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => string.Equals(y.levelID.Split('_')[2], l_CurrentMap.Hash, StringComparison.OrdinalIgnoreCase));
 
-                    if (l_Song == null && !m_SongsToDownload.Contains(l_Hash))
-                        m_SongsToDownload.Add(l_Hash);
+                        if (l_Song == null && !m_SongsToDownload.Contains(l_CurrentMap.Hash))
+                            m_SongsToDownload.Add(l_CurrentMap.Hash);
+
+                        l_AddedSongs++;
+                    }
+
+                    if (l_AddedSongs >= m_PlaylistSize)
+                        break;
                 }
+            }
+            else if (l_IPlaylist is BeatSaberPlaylistsLib.Blist.BlistPlaylist l_BlistPlaylist)
+            {
+                foreach (var l_CurrentMap in l_BlistPlaylist)
+                {
+                    if (l_CurrentMap.Hash != null)
+                    {
+                        var l_Song = SongCore.Loader.CustomLevels.Values.FirstOrDefault(y => string.Equals(y.levelID.Split('_')[2], l_CurrentMap.Hash, StringComparison.OrdinalIgnoreCase));
 
-                while (l_JSONSongs.Count > m_PlaylistSize)
-                    l_JSONSongs.RemoveAt(l_JSONSongs.Count - 1);
+                        if (l_Song == null && !m_SongsToDownload.Contains(l_CurrentMap.Hash))
+                            m_SongsToDownload.Add(l_CurrentMap.Hash);
+
+                        l_AddedSongs++;
+                    }
+
+                    if (l_AddedSongs >= m_PlaylistSize)
+                        break;
+                }
             }
 
             BS_PP_BOOSTERController.Instance.SetText("Writing playlist...");
-            System.IO.File.WriteAllText(l_PlaylistPath, l_JSON.ToString());
+            BeatSaberPlaylistsLib.PlaylistManager.DefaultManager.StorePlaylist(l_IPlaylist);
             BS_PP_BOOSTERController.Instance.SetText("Playlist OK");
 
             if (m_SongsToDownload.Count != 0)
@@ -440,9 +478,39 @@ namespace BS_PP_BOOSTER.Views
         private void QuerySongMeta()
         {
             string l_URL = "http://beatsaver.com/api/maps/by-hash/" + m_SongsToDownload[m_SongDownloadIndex].ToLower();
+            Logger.log.Debug("Requesting " + l_URL);
 
-            m_HttpClient.GetAsync(l_URL, CancellationToken.None, null).ContinueWith((x) => SongDownloaded_Meta(x.Result));
-            BS_PP_BOOSTERController.Instance.SetText("Downloading song " + (m_SongDownloadIndex + 1) + "/" + m_SongsToDownload.Count);
+            try
+            {
+                m_HttpClient.GetAsync(l_URL, CancellationToken.None, null).ContinueWith((x) => {
+
+                    try
+                    {
+                        SongDownloaded_Meta(x.Result);
+                    }
+                    catch (System.Exception e)
+                    {
+                        Logger.log.Error("QuerySongMeta_Lambda");
+                        Logger.log.Error(e.ToString());
+
+                        m_SongDownloadIndex++;
+
+                        if (m_SongDownloadIndex < m_SongsToDownload.Count)
+                            QuerySongMeta();
+                        else
+                            DownloadComplete();
+                    }
+
+                });
+
+                BS_PP_BOOSTERController.Instance.SetText("Downloading song " + (m_SongDownloadIndex + 1) + "/" + m_SongsToDownload.Count);
+                BS_PP_BOOSTERController.Instance.SetTextPercentage(0);
+            }
+            catch (System.Exception e)
+            {
+                Logger.log.Error("QuerySongMeta");
+                Logger.log.Error(e.ToString());
+            }
         }
         /// <summary>
         /// On song meta received
@@ -455,6 +523,7 @@ namespace BS_PP_BOOSTER.Views
             {
                 if (p_Response == null || !p_Response.IsSuccessStatusCode || p_Response.StatusCode != HttpStatusCode.OK)
                 {
+                    Logger.log.Error("Meta failed : ");
                     Logger.log.Error(p_Response.ReasonPhrase);
                     m_SongDownloadIndex++;
 
@@ -498,7 +567,9 @@ namespace BS_PP_BOOSTER.Views
                 if (((string)m_CurrentDownloadMeta["directDownload"]).ToLower().StartsWith("http"))
                     l_DownloadURL = (string)m_CurrentDownloadMeta["directDownload"];
 
-                var l_Query = m_HttpClient.GetAsync(l_DownloadURL, CancellationToken.None, null);
+                //Logger.log.Debug("Downlaoding " + l_DownloadURL);
+
+                var l_Query = m_HttpClient.GetAsync(l_DownloadURL, CancellationToken.None, new ProgressReporter());
                 l_Query.GetAwaiter().OnCompleted(() =>
                 {
                     try
@@ -520,16 +591,16 @@ namespace BS_PP_BOOSTER.Views
                     }
                     catch (System.Exception e)
                     {
-                        Logger.log.Debug("DownloadSong");
-                        Logger.log.Debug(e.ToString());
+                        Logger.log.Error("DownloadSong");
+                        Logger.log.Error(e.ToString());
                     }
 
                 });
             }
             catch(System.Exception e)
             {
-                Logger.log.Debug("SongDownloaded_Meta");
-                Logger.log.Debug(e.ToString());
+                Logger.log.Error("SongDownloaded_Meta");
+                Logger.log.Error(e.ToString());
             }
         }
 
@@ -543,6 +614,14 @@ namespace BS_PP_BOOSTER.Views
         {
             Plugin.instance.ExtractQueue.Enqueue(("REFRESH", ""));
             BS_PP_BOOSTERController.Instance.SetText("Download complete");
+        }
+    }
+
+    class ProgressReporter : IProgress<double>
+    {
+        public void Report(double value)
+        {
+            BS_PP_BOOSTERController.Instance.SetTextPercentage(value);
         }
     }
 }

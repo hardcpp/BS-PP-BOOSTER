@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine;
 using BS_Utils.Utilities;
 using IPA.Utilities;
+using System;
 
 namespace BS_PP_BOOSTER
 {
@@ -47,6 +48,10 @@ namespace BS_PP_BOOSTER
         /// Text instance
         /// </summary>
         private TMP_Text m_Text;
+        /// <summary>
+        /// Text str backup
+        /// </summary>
+        private string m_TextStr;
 
         ////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////////////////
@@ -84,12 +89,6 @@ namespace BS_PP_BOOSTER
             m_Text.text                         = "";
             m_Text.fontSize                     = HeaderFontSize;
             m_Text.alignment                    = TextAlignmentOptions.Center;
-
-            ///var l_Background            = new GameObject("Background").AddComponent<Image>();
-            ///l_RectTransform             = l_Background.transform as RectTransform;
-            ///l_RectTransform.SetParent(m_Canvas.transform, false);
-            ///l_RectTransform.sizeDelta   = CanvasSize;
-            ///l_Background.color          = new Color(0, 1, 0, 0.5f);
 
             SetVisible(false);
 
@@ -137,7 +136,16 @@ namespace BS_PP_BOOSTER
         /// <param name="p_Text">New text</param>
         public void SetText(string p_Text)
         {
+            m_TextStr = p_Text;
             m_Text.text = p_Text;
+        }
+        /// <summary>
+        /// Set download percentage
+        /// </summary>
+        /// <param name="p_Progress">Download progress</param>
+        public void SetTextPercentage(double p_Progress)
+        {
+            m_Text.text = m_TextStr + " (" + System.Math.Round(p_Progress * 100, 2).ToString("0.00") + "%)";
         }
 
         ////////////////////////////////////////////////////////////////////////////
@@ -158,7 +166,7 @@ namespace BS_PP_BOOSTER
 
             TextMeshProUGUI l_Text = l_GameObject.AddComponent<HMUI.CurvedTextMeshPro>();
             l_Text.rectTransform.SetParent(p_Parent, false);
-            l_Text.font                             = Resources.Load<TMP_FontAsset>("Teko-Medium SDF No Glow");
+            l_Text.font                             = Resources.Load<TMP_FontAsset>("Teko-Medium SDF");
             l_Text.text                             = p_Text;
             l_Text.fontSize                         = 4;
             l_Text.color                            = Color.white;
@@ -169,43 +177,6 @@ namespace BS_PP_BOOSTER
 
             l_GameObject.SetActive(true);
             return l_Text;
-        }
-
-        ////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////
-
-        /// <summary>
-        /// Start refreshing songs
-        /// </summary>
-        public void RefreshSongs()
-        {
-            StartCoroutine(RefreshSongsCoroutine());
-        }
-        /// <summary>
-        /// Reload song coroutine
-        /// </summary>
-        /// <returns></returns>
-        internal IEnumerator RefreshSongsCoroutine()
-        {
-            SetVisible(true);
-            SetText("Reloading songs");
-
-            if (!Loader.AreSongsLoading)
-                Loader.Instance.RefreshSongs();
-
-            yield return new WaitUntil(() => Loader.AreSongsLoaded == true);
-
-            var l_Type = typeof(PlaylistLoaderLite.LoadPlaylistScript);
-            try
-            {
-                l_Type.InvokeMethod("load", new object[] { });
-            }
-            catch (System.Exception)
-            {
-                l_Type.InvokeMethod("Load", new object[] { });
-            }
-
-            SetText("Songs reloaded !");
         }
     }
 }

@@ -16,7 +16,7 @@ namespace BS_PP_BOOSTER
     /// <summary>
     /// Main plugin class
     /// </summary>
-    [Plugin(RuntimeOptions.DynamicInit)]
+    [Plugin(RuntimeOptions.SingleStartInit)]
     public class Plugin
     {
         /// <summary>
@@ -175,9 +175,7 @@ namespace BS_PP_BOOSTER
         /// <param name="p_NewScene">New scene instance</param>
         private void OnActiveSceneChanged(Scene p_OldScene, Scene p_NewScene)
         {
-            Logger.log.Error("Scene changed " + p_NewScene.name);
-
-            if (p_NewScene.name == "MenuViewControllers")
+            if (p_NewScene.name == "MainMenu")
             {
                 GetUserInfo.TriggerReady();
                 GetUserInfo.UpdateUserInfo();
@@ -199,9 +197,9 @@ namespace BS_PP_BOOSTER
 
                     CheckForInitialSetup();
                 }
-                catch (System.Exception)
+                catch (System.Exception ex)
                 {
-
+                    Logger.log.Error(ex);
                 }
             }
             else
@@ -233,22 +231,69 @@ namespace BS_PP_BOOSTER
 
             string l_BeatMapHash = p_BeatMap.levelID.Substring("custom_level_".Length);
 
-            var l_BSPPBoosterData = GetSongInformationFromPlaylist(l_BeatMapHash);
-            if (l_BSPPBoosterData == null)
+            var l_IPlaylist = BeatSaberPlaylistsLib.PlaylistManager.DefaultManager.GetPlaylist(Helper.GetPlaylistFileName() + ".bplist");
+            if (l_IPlaylist == null)
+            {
+                l_IPlaylist = BeatSaberPlaylistsLib.PlaylistManager.DefaultManager.GetPlaylist(Helper.GetPlaylistFileName() + ".json");
+                if (l_IPlaylist == null)
+                    l_IPlaylist = BeatSaberPlaylistsLib.PlaylistManager.DefaultManager.GetPlaylist(Helper.GetPlaylistFileName() + ".blist");
+            }
+
+            if (l_IPlaylist == null)
             {
                 m_Controller.SetText("");
                 return;
             }
 
-            string l_ExceptedDifficulty = l_BSPPBoosterData["bsppb_difficulty"];
-            string l_ExceptedRanking    = l_BSPPBoosterData["bsppb_rank"];
-            string l_ExceptedPPRaw      = l_BSPPBoosterData["bsppb_ppraw"] + "pp";
-            string l_ExceptedPP         = l_BSPPBoosterData["bsppb_ppwei"] + "pp";
-            string l_MinTargetAccuracy  = l_BSPPBoosterData["bsppb_targetacc"];
-            string l_ProfileName        = l_BSPPBoosterData["bsppb_profile"];
-            string l_CurPP              = l_BSPPBoosterData["bsppb_curweipp"];
-            string l_MaxPP              = l_BSPPBoosterData["bsppb_maxweipp"];
-            string l_Rank               = l_BSPPBoosterData["bsppb_currank"];
+            var l_IPlaylistSong = l_IPlaylist.Where(x => x.Hash.ToLower() == l_BeatMapHash.ToLower()).FirstOrDefault();
+
+            if (l_IPlaylistSong == null)
+            {
+                m_Controller.SetText("");
+                return;
+            }
+
+            /// Generic playlist meta data
+            string l_CurPP          = "--";
+            string l_MaxPP          = "--";
+            string l_Rank           = "--";
+            string l_ProfileName    = "--";
+
+            if (l_IPlaylist.TryGetCustomData("bsppb_curweipp", out var l_RawCurPP))
+                l_CurPP = l_RawCurPP.ToString();
+
+            if (l_IPlaylist.TryGetCustomData("bsppb_maxweipp", out var l_RawMaxPP))
+                l_MaxPP = l_RawMaxPP.ToString();
+
+            if (l_IPlaylist.TryGetCustomData("bsppb_currank", out var l_RawRank))
+                l_Rank = (l_RawRank is string) ? l_RawRank as string : l_Rank;
+
+            if (l_IPlaylist.TryGetCustomData("bsppb_profile", out var l_RawProfileName))
+                l_ProfileName = (l_RawProfileName is string) ? l_RawProfileName as string : l_ProfileName;
+
+            /// Song metadata
+            string l_ExceptedDifficulty = "--";// l_BSPPBoosterData["bsppb_difficulty"];
+            string l_ExceptedRanking    = "--";// l_BSPPBoosterData["bsppb_rank"];
+            string l_ExceptedPPRaw      = "--";// l_BSPPBoosterData["bsppb_ppraw"] + "pp";
+            string l_ExceptedPP         = "--";// l_BSPPBoosterData["bsppb_ppwei"] + "pp";
+            string l_MinTargetAccuracy  = "--";// l_BSPPBoosterData["bsppb_targetacc"];
+
+            if (l_IPlaylistSong.TryGetCustomData("bsppb_difficulty", out var l_RawExceptedDifficulty))
+                l_ExceptedDifficulty = (l_RawExceptedDifficulty is string) ? l_RawExceptedDifficulty as string : l_ExceptedDifficulty;
+
+            if (l_IPlaylistSong.TryGetCustomData("bsppb_rank", out var l_RawExceptedRanking))
+                l_ExceptedRanking = l_RawExceptedRanking.ToString();
+
+            if (l_IPlaylistSong.TryGetCustomData("bsppb_ppraw", out var l_RawExceptedPPRaw))
+                l_ExceptedPPRaw = l_RawExceptedPPRaw.ToString();
+
+            if (l_IPlaylistSong.TryGetCustomData("bsppb_ppwei", out var l_RawExceptedPP))
+                l_ExceptedPP = l_RawExceptedPP.ToString();
+
+            if (l_IPlaylistSong.TryGetCustomData("bsppb_targetacc", out var l_RawMinTargetAccuracy))
+                l_MinTargetAccuracy = l_RawMinTargetAccuracy.ToString();
+
+            /// ==============
 
             string l_NewMessage = "";
 
@@ -267,55 +312,6 @@ namespace BS_PP_BOOSTER
                 instance.m_UIFlowCoordinator = BeatSaberMarkupLanguage.BeatSaberUI.CreateFlowCoordinator<Views.ViewFlowCoordinator>();
 
             BeatSaberUI.MainFlowCoordinator.PresentFlowCoordinator(instance.m_UIFlowCoordinator);
-        }
-
-        ////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////
-
-        /// <summary>
-        /// Get BS PP Booster information from the play list
-        /// </summary>
-        /// <param name="p_Hash">Song hash</param>
-        /// <returns>Data or null</returns>
-        private Dictionary<string, string> GetSongInformationFromPlaylist(string p_Hash)
-        {
-            Dictionary<string, string> l_Result = new Dictionary<string, string>();
-
-            string l_PlaylistPath = Helper.GetPlaylistFilePath();
-
-            if (!System.IO.File.Exists(l_PlaylistPath))
-            {
-                Logger.log.Error("File not found " + l_PlaylistPath);
-                return null;
-            }
-
-            var l_JSON = JObject.Parse(System.IO.File.ReadAllText(l_PlaylistPath));
-            if (l_JSON["songs"] != null)
-            {
-                JArray l_JSONSongs = (JArray)l_JSON["songs"];
-                for (int l_SongIt = 0; l_SongIt < l_JSONSongs.Count; l_SongIt++)
-                {
-                    if (p_Hash.ToLower() != ((string)l_JSONSongs[l_SongIt]["hash"]).ToLower())
-                        continue;
-
-                    l_Result.Add("bsppb_difficulty",(string)l_JSONSongs[l_SongIt]["bsppb_difficulty"]);
-                    l_Result.Add("bsppb_rank",      (string)l_JSONSongs[l_SongIt]["bsppb_rank"]);
-                    l_Result.Add("bsppb_ppraw",     (string)l_JSONSongs[l_SongIt]["bsppb_ppraw"]);
-                    l_Result.Add("bsppb_ppwei",     (string)l_JSONSongs[l_SongIt]["bsppb_ppwei"]);
-                    l_Result.Add("bsppb_score",     (string)l_JSONSongs[l_SongIt]["bsppb_score"]);
-                    l_Result.Add("bsppb_scoremax",  (string)l_JSONSongs[l_SongIt]["bsppb_scoremax"]);
-                    l_Result.Add("bsppb_targetacc", (string)l_JSONSongs[l_SongIt]["bsppb_targetacc"]);
-
-                    if (l_JSON.ContainsKey("bsppb_profile"))  l_Result.Add("bsppb_profile",  (string)l_JSON["bsppb_profile"]);
-                    if (l_JSON.ContainsKey("bsppb_currank"))  l_Result.Add("bsppb_currank",  (string)l_JSON["bsppb_currank"]);
-                    if (l_JSON.ContainsKey("bsppb_curweipp")) l_Result.Add("bsppb_curweipp", (string)l_JSON["bsppb_curweipp"]);
-                    if (l_JSON.ContainsKey("bsppb_maxweipp")) l_Result.Add("bsppb_maxweipp", (string)l_JSON["bsppb_maxweipp"]);
-
-                    break;
-                }
-            }
-
-            return l_Result.Count == 0 ? null : l_Result;
         }
 
         ////////////////////////////////////////////////////////////////////////////

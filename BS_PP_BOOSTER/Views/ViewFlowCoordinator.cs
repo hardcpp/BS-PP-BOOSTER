@@ -1,10 +1,5 @@
-﻿using System;
-using System.Linq;
-using IPA.Utilities;
+﻿using BeatSaberMarkupLanguage;
 using HMUI;
-using BeatSaberMarkupLanguage;
-using BS_Utils.Utilities;
-using UnityEngine;
 
 namespace BS_PP_BOOSTER.Views
 {
